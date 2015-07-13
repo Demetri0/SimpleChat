@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html ng-app="ChatApp">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title> Chat.io </title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap-theme.min.css">
+
+
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.2/angular.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    
+    <script>
+        var socket = io.connect('http://localhost:8080');
+
+        var ChatApp = angular.module("ChatApp", []);
+
+        ChatApp.controller("ChatCtrl", function($scope){
+            $scope.data = {
+                messages : []
+            };
+            $scope.username = "Guest";
+
+            $scope.addMessage = function(message){
+                $scope.data.messages.unshift(message);
+                $scope.message = "";
+            }
+            $scope.makeMessage = function(){
+                var currentdate = new Date(); 
+                var time =  currentdate.getHours() + ":"  + currentdate.getMinutes() + ":" + currentdate.getSeconds();
+
+                var msg = {
+                    from :    $scope.username,
+                    time :    time,
+                    message : $scope.message
+                };
+
+                return msg;
+            }
+            $scope.addNewMessage = function(){
+                var msg = $scope.makeMessage();
+
+                $scope.addMessage(msg);
+
+                socket.emit('sendMessage', msg);
+            }
+            
+
+            socket.on('pullMessage', function(message){
+                $scope.addMessage(message);
+                $scope.$apply();
+            });
+        });
+    </script>
+</head>
+<body ng-controller="ChatCtrl">
+    <div class="container">
+        <section class="page-header">
+            <h1>Простой чатик на Angular.js, Bootstrap и Socket.io</h1>
+            
+            <div class="input-group">
+                <div class="input-group-addon"> <label >Имя пользователя:</label> </div>
+                <input class="form-control" type="text" ng-model="username" placeholder="Имя пользователя" />
+            </div>
+        </section>
+        <section id="middle">
+            <section class="panel input-group">
+                <input class="form-control" type="text" ng-model="message" placeholder="Сообщение"/>
+                <span class="input-group-btn">
+                    <button class="btn btn-primary" ng-click="addNewMessage()">Отправить</button>
+                </span>
+            </section>
+            <section>
+                <div style="padding: 8px" class="panel panel-info" ng-repeat="msg in data.messages">
+                    <h4 class="header">{{msg.from}} <small>{{msg.time}}</small></h4>
+                    <p>{{msg.message}}</p>
+                </div>
+            </section>
+        </section>
+    </div>
+</body>
+</html>
